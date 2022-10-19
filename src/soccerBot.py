@@ -68,6 +68,7 @@ class SoccerBotGame():
   def updateKeys(self):
     keys = pygame.key.get_pressed()
 
+    # TODO COMMENT THIS WHEN SIMULATION IS COMPLETE
     # For controlling the player
     if keys[pygame.K_RIGHT] and keys[pygame.K_DOWN]:
       self.playerCoordX += self.playerVelocity
@@ -176,6 +177,7 @@ class SoccerBotGame():
 
   # Function to call when player collides with ball
   def playerInteraction(self):
+    # TODO CALL FUNCTION TO CALCULATE STRENGHT TO KICK THE BALL
     self.kickBall(self.playerCurrentDirection, self.ballVelocity * 2) # Testing
 
   def runGame(self):
@@ -187,6 +189,8 @@ class SoccerBotGame():
           self.run = False
 
       self.updateKeys() # TODO when simulation is done, this should be commented
+
+      # TODO ADD FUNCTION TO SEARCH FOR BALL
 
       self.detectCollisions()
 
