@@ -1,4 +1,8 @@
+from tkinter import Y
 import pygame
+import skfuzzy as fuzz
+import numpy as np
+from skfuzzy import control as ctrl
 
 class SoccerBotGame():
   def __init__(self):
@@ -45,6 +49,63 @@ class SoccerBotGame():
 
     # Counter to keep goal count
     self.score = 0
+
+    # ---------------- CRISP VARIABLES ----------------
+
+    # Fuzzy logic antecednets (inputs)
+    self.location = ctrl.Antecedent(np.arange(0, 70, 1), 'location')  
+   
+    self.distance = ctrl.Antecedent(np.arange(0, 70, 1), 'distance')  
+    self.speed = ctrl.Antecedent(np.arange(0, 250, 5), 'speed') 
+    
+    # Fuzzy logic consequents (outputs) 
+    self.coordenates = ctrl.Consequent(np.arange(-20, 5, 1), 'coordenates')
+    self.force = ctrl.Consequent(np.arange(-20, 5, 1), 'force') 
+
+    #  ---------------- LINGUISTIC VARIABLES ----------------
+    # find the ball
+    self.location['left'] = fuzz.trimf(self.location.universe, [0, 0, 70])
+    self.location['right'] = fuzz.trimf(self.location.universe, [0, 0, 70])
+    self.location['up'] = fuzz.trimf(self.location.universe, [0, 70, 70]) 
+    self.location['down'] = fuzz.trimf(self.location.universe, [0, 70, 70]) 
+
+    self.coordenates['x'] = fuzz.trimf(self.coordenates.universe, [-20, -20, -10])
+    self.coordenates['y'] = fuzz.trimf(self.coordenates.universe, [-15, -10, -5])
+    
+    # force to kick ball
+    self.speed['slow'] = fuzz.trimf(self.speed.universe, [0, 10, 20])
+    self.speed['medium'] = fuzz.trimf(self.speed.universe, [15, 25, 40])
+    self.speed['fast'] = fuzz.trimf(self.speed.universe, [35, 50, 60])
+
+    self.distance['close'] = fuzz.trimf(self.distance.universe, [0, 0, 20])
+    self.distance['middle'] = fuzz.trimf(self.distance.universe, [10, 40, 80])
+    self.distance['far'] = fuzz.trimf(self.distance.universe, [150, 250, 250])
+
+    self.force['low'] = fuzz.trimf(self.force.universe, [-20, -20, -10])
+    self.force['mid'] = fuzz.trimf(self.force.universe, [-15, -10, -5])
+    self.force['high'] = fuzz.trimf(self.force.universe, [-8, -5, 0])
+
+    self.forceRules = [
+      ctrl.Rule(self.speed['slow'] & self.distance['close'] | self.distance['middle'] | self.distance['far'], self.force['high']),
+      ctrl.Rule(self.speed['medium'] & self.distance['close'] | self.distance['middle'] | self.distance['far'], self.force['mid']),
+      ctrl.Rule(self.speed['fast'] & self.distance['close'] | self.distance['middle'] | self.distance['far'], self.force['slow']),
+    ]
+
+    self.coordRules = [
+      ctrl.Rule(self.location['left'], -self.coordenates['x']),
+      ctrl.Rule(self.location['right'], self.coordenates['x']),
+
+      ctrl.Rule(self.location['down'], -self.coordenates['y']),
+      ctrl.Rule(self.location['up'], self.coordenates['y']),
+    ]
+
+    self.coordSystem = ctrl.ControlSystem(self.coordRules)
+    self.coordSim = ctrl.ControlSystemSimulation(self.coordSystem)
+
+    self.forceSystem = ctrl.ControlSystem(self.forceRules)
+    self.forceSim = ctrl.ControlSystemSimulation(self.forceSim)
+
+
 
     # Init objects in scene
     self.updateFrame()
@@ -101,6 +162,8 @@ class SoccerBotGame():
     elif keys[pygame.K_ESCAPE]:
       self.run = False
 
+    
+
     # For controlling the ball
     # if keys[pygame.K_RIGHT] and keys[pygame.K_DOWN]:
     #   self.kickBall((1,1), self.ballVelocity)
@@ -133,6 +196,22 @@ class SoccerBotGame():
     (-1, -1) Left-Up
   @param strength: Velocity (Number of pixels to move)
   '''
+
+# FUZZY SIMULATIONS
+
+  def calculateCoordenates(self, location):
+    self.coordSim.input['location'] = location
+    self.coordSim.compute()
+    return self.coordSim.output['coordenates']
+
+  def calculateForce(self, distance, speed):
+    self.forceSim.input['distance'] = distance
+    self.forceSim.input['speed'] = speed
+    self.forceSim.compute()
+    return self.forceSim.output['force']
+
+
+
   def kickBall(self, direction, strength): # Direction has to come as a vector (x, y)
     dirX = direction[0]
     dirY = direction[1]
