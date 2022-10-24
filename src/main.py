@@ -6,11 +6,10 @@ from soccerBot import SoccerBotGame
 
 simulation = SoccerBotGame()
 
-simulation.location()
-simulation.distance()
-simulation.speed()
-simulation.coordenates()
-simulation.force()
-
+# simulation.location()
+# simulation.distance()
+# simulation.speed()
+# simulation.coordenates()
+# simulation.force()
 
 simulation.runGame()

@@ -1,15 +1,16 @@
-from tkinter import Y
 import pygame
 import skfuzzy as fuzz
 import numpy as np
+import math
+from random import randint
 from skfuzzy import control as ctrl
 
 class SoccerBotGame():
   def __init__(self):
     pygame.init()
 
-    self.win_width = 900
-    self.win_height = 900
+    self.win_width = 900 # DO NOT CHANGE
+    self.win_height = 900 # DO NOT CHANGE
 
     self.win_background = (76, 133, 39) # Green
     self.player_color = (0,0,0) # Black
@@ -32,11 +33,11 @@ class SoccerBotGame():
     self.playerWidth = 20
     self.playerHeight = 30
     self.playerVelocity = 20
-    self.playerCurrentDirection = (0,0)
+    self.playerCurrentDirection = (0, 0)
 
     # Ball starting coordinates
     self.ballStartX = 100
-    self.ballStartY = 100
+    self.ballStartY = randint(100, 800)
 
     # Ball coords
     self.ballCoordX = 100
@@ -47,6 +48,9 @@ class SoccerBotGame():
     self.ballHeight = 10
     self.ballVelocity = 20
 
+    # Direction to the goal from the player
+    self.goalDirection = (0, 0)
+
     # Counter to keep goal count
     self.score = 0
 
@@ -56,11 +60,11 @@ class SoccerBotGame():
     self.location = ctrl.Antecedent(np.arange(0, 70, 1), 'location')  
    
     self.distance = ctrl.Antecedent(np.arange(0, 70, 1), 'distance')  
-    self.speed = ctrl.Antecedent(np.arange(0, 250, 5), 'speed') 
+    self.speed = ctrl.Antecedent(np.arange(0, 250, 5), 'speed')
     
     # Fuzzy logic consequents (outputs) 
     self.coordenates = ctrl.Consequent(np.arange(-20, 5, 1), 'coordenates')
-    self.force = ctrl.Consequent(np.arange(-20, 5, 1), 'force') 
+    self.force = ctrl.Consequent(np.arange(-20, 5, 1), 'force')
 
     #  ---------------- LINGUISTIC VARIABLES ----------------
     # find the ball
@@ -81,21 +85,21 @@ class SoccerBotGame():
     self.distance['middle'] = fuzz.trimf(self.distance.universe, [10, 40, 80])
     self.distance['far'] = fuzz.trimf(self.distance.universe, [150, 250, 250])
 
-    self.force['low'] = fuzz.trimf(self.force.universe, [-20, -20, -10])
-    self.force['mid'] = fuzz.trimf(self.force.universe, [-15, -10, -5])
-    self.force['high'] = fuzz.trimf(self.force.universe, [-8, -5, 0])
+    self.force['low'] = fuzz.trimf(self.force.universe, [0, 0, 5])
+    self.force['mid'] = fuzz.trimf(self.force.universe, [0, 5, 10])
+    self.force['high'] = fuzz.trimf(self.force.universe, [5, 10, 10])
 
     self.forceRules = [
       ctrl.Rule(self.speed['slow'] & self.distance['close'] | self.distance['middle'] | self.distance['far'], self.force['high']),
       ctrl.Rule(self.speed['medium'] & self.distance['close'] | self.distance['middle'] | self.distance['far'], self.force['mid']),
-      ctrl.Rule(self.speed['fast'] & self.distance['close'] | self.distance['middle'] | self.distance['far'], self.force['slow']),
+      ctrl.Rule(self.speed['fast'] & self.distance['close'] | self.distance['middle'] | self.distance['far'], self.force['low']),
     ]
 
     self.coordRules = [
-      ctrl.Rule(self.location['left'], -self.coordenates['x']),
+      ctrl.Rule(self.location['left'], self.coordenates['x']),
       ctrl.Rule(self.location['right'], self.coordenates['x']),
 
-      ctrl.Rule(self.location['down'], -self.coordenates['y']),
+      ctrl.Rule(self.location['down'], self.coordenates['y']),
       ctrl.Rule(self.location['up'], self.coordenates['y']),
     ]
 
@@ -103,9 +107,13 @@ class SoccerBotGame():
     self.coordSim = ctrl.ControlSystemSimulation(self.coordSystem)
 
     self.forceSystem = ctrl.ControlSystem(self.forceRules)
-    self.forceSim = ctrl.ControlSystemSimulation(self.forceSim)
+    self.forceSim = ctrl.ControlSystemSimulation(self.forceSystem)
 
-
+    # self.speed.view()
+    # self.location.view()
+    # self.coordenates.view()
+    # self.distance.view()
+    # self.force.view()
 
     # Init objects in scene
     self.updateFrame()
@@ -129,40 +137,40 @@ class SoccerBotGame():
   def updateKeys(self):
     keys = pygame.key.get_pressed()
 
-    # TODO COMMENT THIS WHEN SIMULATION IS COMPLETE
-    # For controlling the player
-    if keys[pygame.K_RIGHT] and keys[pygame.K_DOWN]:
-      self.playerCoordX += self.playerVelocity
-      self.playerCoordY += self.playerVelocity
-      self.playerCurrentDirection = (1,1)
-    elif keys[pygame.K_RIGHT] and keys[pygame.K_UP]:
-      self.playerCoordX += self.playerVelocity
-      self.playerCoordY -= self.playerVelocity
-      self.playerCurrentDirection = (1,-1)
-    elif keys[pygame.K_LEFT] and keys[pygame.K_DOWN]:
-      self.playerCoordX -= self.playerVelocity
-      self.playerCoordY += self.playerVelocity
-      self.playerCurrentDirection = (-1,1)
-    elif keys[pygame.K_LEFT] and keys[pygame.K_UP]:
-      self.playerCoordX -= self.playerVelocity
-      self.playerCoordY -= self.playerVelocity
-      self.playerCurrentDirection = (-1,-1)
-    elif keys[pygame.K_RIGHT]:
-      self.playerCoordX += self.playerVelocity
-      self.playerCurrentDirection = (1,0)
-    elif keys[pygame.K_LEFT]:
-      self.playerCoordX -= self.playerVelocity
-      self.playerCurrentDirection = (-1,0)
-    elif keys[pygame.K_UP]:
-      self.playerCoordY -= self.playerVelocity
-      self.playerCurrentDirection = (0,-1)
-    elif keys[pygame.K_DOWN]:
-      self.playerCoordY += self.playerVelocity
-      self.playerCurrentDirection = (0,1)
-    elif keys[pygame.K_ESCAPE]:
+    if keys[pygame.K_ESCAPE]:
       self.run = False
 
-    
+    # # For controlling the player
+    # if keys[pygame.K_RIGHT] and keys[pygame.K_DOWN]:
+    #   self.playerCoordX += self.playerVelocity
+    #   self.playerCoordY += self.playerVelocity
+    #   self.playerCurrentDirection = (1,1)
+    # elif keys[pygame.K_RIGHT] and keys[pygame.K_UP]:
+    #   self.playerCoordX += self.playerVelocity
+    #   self.playerCoordY -= self.playerVelocity
+    #   self.playerCurrentDirection = (1,-1)
+    # elif keys[pygame.K_LEFT] and keys[pygame.K_DOWN]:
+    #   self.playerCoordX -= self.playerVelocity
+    #   self.playerCoordY += self.playerVelocity
+    #   self.playerCurrentDirection = (-1,1)
+    # elif keys[pygame.K_LEFT] and keys[pygame.K_UP]:
+    #   self.playerCoordX -= self.playerVelocity
+    #   self.playerCoordY -= self.playerVelocity
+    #   self.playerCurrentDirection = (-1,-1)
+    # elif keys[pygame.K_RIGHT]:
+    #   self.playerCoordX += self.playerVelocity
+    #   self.playerCurrentDirection = (1,0)
+    # elif keys[pygame.K_LEFT]:
+    #   self.playerCoordX -= self.playerVelocity
+    #   self.playerCurrentDirection = (-1,0)
+    # elif keys[pygame.K_UP]:
+    #   self.playerCoordY -= self.playerVelocity
+    #   self.playerCurrentDirection = (0,-1)
+    # elif keys[pygame.K_DOWN]:
+    #   self.playerCoordY += self.playerVelocity
+    #   self.playerCurrentDirection = (0,1)
+    # elif keys[pygame.K_ESCAPE]:
+    #   self.run = False
 
     # For controlling the ball
     # if keys[pygame.K_RIGHT] and keys[pygame.K_DOWN]:
@@ -197,7 +205,7 @@ class SoccerBotGame():
   @param strength: Velocity (Number of pixels to move)
   '''
 
-# FUZZY SIMULATIONS
+  # FUZZY SIMULATIONS
 
   def calculateCoordenates(self, location):
     self.coordSim.input['location'] = location
@@ -209,8 +217,6 @@ class SoccerBotGame():
     self.forceSim.input['speed'] = speed
     self.forceSim.compute()
     return self.forceSim.output['force']
-
-
 
   def kickBall(self, direction, strength): # Direction has to come as a vector (x, y)
     dirX = direction[0]
@@ -240,24 +246,84 @@ class SoccerBotGame():
 
   def resetBall(self):
     self.ballCoordX = self.ballStartX
-    self.ballCoordY = self.ballStartY
+    self.ballCoordY = randint(100, 800)
 
   def detectCollisions(self):
     # Collision between player and ball
     if self.ball.colliderect(self.player):
       self.playerInteraction()
-      print(f'Colission at Ball({self.ball.x}, {self.ball.y}) - Player({self.player.x}, {self.player.y})')
+      # print(f'Colission at Ball({self.ball.x}, {self.ball.y}) - Player({self.player.x}, {self.player.y})')
     
     # Collision between ball and goal area
     if self.ball.colliderect(self.goalArea):
       self.score += 1
       self.resetBall()
-      print(f'Score: {self.score}')
+      # print(f'Score: {self.score}')
 
   # Function to call when player collides with ball
   def playerInteraction(self):
-    # TODO CALL FUNCTION TO CALCULATE STRENGHT TO KICK THE BALL
-    self.kickBall(self.playerCurrentDirection, self.ballVelocity * 2) # Testing
+    # Calc force to hit the ball
+    playerCoords = (self.player.x, self.player.y)
+    ballCoords = (self.ball.x, self.ball.y)
+    dist = self.getDistanceToBall(playerCoords, ballCoords)
+    forceToHit = abs(self.calculateForce(dist, self.playerVelocity))
+
+    # Update goal direction
+    self.getGoalDirection()
+
+    # Kick ball
+    self.kickBall(self.goalDirection, self.ballVelocity * forceToHit) # Testing
+
+  def getDistanceToBall(self, a, b):
+    return math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
+
+  def getGoalDirection(self):
+    ballX = self.ball.x
+    ballY = self.ball.y
+    goalX = [850, 900]
+    goalY = [350, 550]
+
+    # Ball is on the left
+    if ballX < goalX[0]:
+      self.goalDirection = (1, self.goalDirection[1])
+    
+    # Ball is up
+    if ballY < goalY[0]:
+      self.goalDirection = (self.goalDirection[0], 1)
+
+    # Ball is down
+    elif ballY > goalY[1]:
+      self.goalDirection = (self.goalDirection[0], -1)
+
+  def lookForBall(self):
+    # Calc distance from player to ball
+    playerCoords = (self.player.x, self.player.y)
+    ballCoords = (self.ball.x, self.ball.y)
+    
+    deltaX = playerCoords[0] - ballCoords[0]
+    deltaY = playerCoords[1] - ballCoords[1]
+    
+    ### X Coords ###
+    # Player is on the right
+    if deltaX > 0:
+      self.playerCurrentDirection = (-1, self.playerCurrentDirection[1])
+    # Player is on the left
+    elif deltaX < 0:
+      self.playerCurrentDirection = (1, self.playerCurrentDirection[1])
+    
+    ### Y Coords ###
+    # Player is down
+    if deltaY > 0:
+      self.playerCurrentDirection = (self.playerCurrentDirection[0], -1)
+    # Player is up
+    elif deltaY < 0:
+      self.playerCurrentDirection = (self.playerCurrentDirection[0], 1)
+    
+    self.movePlayer()
+      
+  def movePlayer(self):
+    self.playerCoordX += self.playerCurrentDirection[0] * self.playerVelocity
+    self.playerCoordY += self.playerCurrentDirection[1] * self.playerVelocity
 
   def runGame(self):
     while self.run:
@@ -267,9 +333,9 @@ class SoccerBotGame():
         if event.type == pygame.QUIT:
           self.run = False
 
-      self.updateKeys() # TODO when simulation is done, this should be commented
+      self.updateKeys()
 
-      # TODO ADD FUNCTION TO SEARCH FOR BALL
+      self.lookForBall()
 
       self.detectCollisions()
 
