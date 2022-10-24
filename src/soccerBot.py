@@ -1,6 +1,7 @@
 import pygame
 import skfuzzy as fuzz
 import numpy as np
+import matplotlib.pyplot as plt
 import math
 from random import randint
 from skfuzzy import control as ctrl
@@ -114,6 +115,15 @@ class SoccerBotGame():
     # self.coordenates.view()
     # self.distance.view()
     # self.force.view()
+  
+    # Graphic -> find the ball
+    self.location.view()
+    plt.title('Function to find the ball')
+
+    # Grapic -> force to kick ball 
+    self.force.view()
+    plt.title('Force to kick the ball')
+    plt.show()
 
     # Init objects in scene
     self.updateFrame()
@@ -137,19 +147,19 @@ class SoccerBotGame():
     font2 = pygame.font.Font('freesansbold.ttf', 20)
 
     textScore = font.render(f'Score: {self.score}', True, white)
-    self.gameWindow.blit(textScore, (0,110))
+    self.gameWindow.blit(textScore, (1,110))
     
     # player coordinates
     playerLabel = font2.render(f'Player coordinates : {self.player.x}, {self.player.y}', True, white)
-    self.gameWindow.blit(playerLabel, (0,20))
+    self.gameWindow.blit(playerLabel, (1,20))
 
     # ball coordinates
     ballLabel = font2.render(f'Ball coordinates: {self.ball.x}, {self.ball.y}', True, white)
-    self.gameWindow.blit(ballLabel, (0,50))
+    self.gameWindow.blit(ballLabel, (1,50))
 
     # goal coordinates
     goalLabel = font2.render(f'Goal coordinates: {self.goalArea}', True, white)
-    self.gameWindow.blit(goalLabel, (0,80))
+    self.gameWindow.blit(goalLabel, (1,80))
 
     # Refresh window
     pygame.display.update()
@@ -272,13 +282,11 @@ class SoccerBotGame():
     # Collision between player and ball
     if self.ball.colliderect(self.player):
       self.playerInteraction()
-      # print(f'Colission at Ball({self.ball.x}, {self.ball.y}) - Player({self.player.x}, {self.player.y})')
     
     # Collision between ball and goal area
     if self.ball.colliderect(self.goalArea):
       self.score += 1
       self.resetBall()
-      # print(f'Score: {self.score}')
 
   # Function to call when player collides with ball
   def playerInteraction(self):
