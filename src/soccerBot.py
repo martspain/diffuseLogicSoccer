@@ -131,6 +131,26 @@ class SoccerBotGame():
     self.ball = pygame.draw.circle(self.gameWindow, self.ball_color, (self.ballCoordX, self.ballCoordY), self.ballWidth)
     self.player = pygame.draw.rect(self.gameWindow, self.player_color, (self.playerCoordX, self.playerCoordY, self.playerWidth, self.playerHeight))
 
+    # Score label
+    white = (255, 255, 255)
+    font = pygame.font.Font('freesansbold.ttf', 32)
+    font2 = pygame.font.Font('freesansbold.ttf', 20)
+
+    textScore = font.render(f'Score: {self.score}', True, white)
+    self.gameWindow.blit(textScore, (0,110))
+    
+    # player coordinates
+    playerLabel = font2.render(f'Player coordinates : {self.player.x}, {self.player.y}', True, white)
+    self.gameWindow.blit(playerLabel, (0,20))
+
+    # ball coordinates
+    ballLabel = font2.render(f'Ball coordinates: {self.ball.x}, {self.ball.y}', True, white)
+    self.gameWindow.blit(ballLabel, (0,50))
+
+    # goal coordinates
+    goalLabel = font2.render(f'Goal coordinates: {self.goalArea}', True, white)
+    self.gameWindow.blit(goalLabel, (0,80))
+
     # Refresh window
     pygame.display.update()
 
